@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
+PackageIdentifier: ReyesProject.CuidaTuBateria
+PackageVersion: 6.1.0
+PackageLocale: es-VE
+Publisher: Reyes Project
+PublisherUrl: https://reyesproject.com
+Author: Alexis Reyes
+PackageName: Cuida tu Batería
+PackageUrl: https://bateria.reyesproject.com
+License: GPL-3.0-or-later
+LicenseUrl: https://github.com/alexisreyes02/cuida-tu-bateria/blob/main/LICENSE
+ShortDescription: Te avisa cuándo conectar y desconectar tu laptop, y cuánto te dura la batería con tu uso real.
+Description: |-
+  Aviso para desconectar al llegar a tu número de arriba y para conectar al bajar al de abajo.
+  Tiempo que te queda con tu propio ritmo de gasto, salud de la batería mes a mes y el informe de Windows en palabras simples.
+  Modo apagón para los días de cortes y modo Vive conectada para la laptop que nunca se desconecta.
+  No corta la carga, no se conecta a internet y no pide permisos de administrador. Solo Windows 10 y 11.
+Tags:
+  - bateria
+  - laptop
+  - energia
+  - salud-de-bateria
+ManifestType: defaultLocale
+ManifestVersion: 1.12.0

@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.12.0.schema.json
+PackageIdentifier: ReyesProject.CuidaTuBateria
+PackageVersion: 6.1.0
+PackageLocale: en-US
+Publisher: Reyes Project
+Author: Alexis Reyes
+PackageName: Cuida tu Batería
+License: GPL-3.0-or-later
+ShortDescription: Reminds you when to plug in and unplug your laptop, and how long the battery lasts with your real use. Spanish and English interface.
+Tags:
+  - battery
+  - laptop
+  - battery-health
+ManifestType: locale
+ManifestVersion: 1.12.0

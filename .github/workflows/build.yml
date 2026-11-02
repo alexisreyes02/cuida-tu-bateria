@@ -1,0 +1,69 @@
+# Builds the app and the installer on a clean Windows machine for every push and pull request.
+# A tag like v6.1.0 also creates a draft release with the installer and its SHA-256.
+# Actions are pinned to full commit SHAs; the comment beside each one names its version.
+name: build
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build
+        shell: bash
+        run: ./build.sh
+      - name: Name the installer and its hash
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [[ "$GITHUB_REF_TYPE" == "tag" ]] || VERSION="dev"
+          mkdir -p dist
+          cp build/installer/CuidaTuBateriaSetup.exe "dist/CuidaTuBateriaSetup-$VERSION.exe"
+          (cd dist && sha256sum *.exe > SHA256.txt && cat SHA256.txt)
+      # Code signing goes here once the SignPath Foundation accepts the project (free for open source).
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cuida-tu-bateria
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cuida-tu-bateria
+          path: dist
+      - name: Release notes
+        shell: bash
+        run: |
+          {
+            echo "Instalador para Windows 10 y 11. Installer for Windows 10 and 11."
+            echo
+            echo "SHA-256:"
+            echo '```'
+            cat dist/SHA256.txt
+            echo '```'
+            echo
+            echo "Mientras no tenga firma digital, Windows puede mostrar \"Windows protegió tu PC\": Más información, Ejecutar de todas formas."
+            echo "Until it is code-signed, Windows may show \"Windows protected your PC\": More info, Run anyway."
+          } > notes.md
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          draft: true
+          body_path: notes.md
+          files: dist/*

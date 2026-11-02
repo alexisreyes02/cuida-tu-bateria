@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Instalador de Cuida tu Batería. Copyright (C) 2026 Alexis Reyes (Reyes Project). GPL-3.0-or-later. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net461</TargetFramework>
+    <LangVersion>10.0</LangVersion>
+    <Platforms>AnyCPU</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AssemblyName>CuidaTuBateriaSetup</AssemblyName>
+    <RootNamespace>CuidaTuBateriaSetup</RootNamespace>
+    <ApplicationIcon>..\assets\cuidatubateria.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>6.1.0</Version>
+    <AssemblyTitle>Instalador de Cuida tu Batería</AssemblyTitle>
+    <Company>Reyes Project</Company>
+    <Product>Cuida tu Batería</Product>
+    <Copyright>Copyright (C) 2026 Alexis Reyes (Reyes Project). GPL-3.0-or-later.</Copyright>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\shared\Shared.cs" Link="Shared.cs" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <EmbeddedResource Include="..\build\payload\CuidaTuBateria.exe" LogicalName="payload.exe" />
+    <EmbeddedResource Include="..\LICENSE" LogicalName="LICENSE.txt" />
+    <EmbeddedResource Include="..\assets\fonts\Literata-Bold.ttf" LogicalName="font.Literata-Bold.ttf" />
+    <EmbeddedResource Include="..\assets\fonts\Literata-Light.ttf" LogicalName="font.Literata-Light.ttf" />
+    <EmbeddedResource Include="..\assets\fonts\IBMPlexSans-Regular.ttf" LogicalName="font.IBMPlexSans-Regular.ttf" />
+    <EmbeddedResource Include="..\assets\fonts\IBMPlexSans-SemiBold.ttf" LogicalName="font.IBMPlexSans-SemiBold.ttf" />
+  </ItemGroup>
+</Project>

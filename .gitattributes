@@ -1,0 +1,2 @@
+# Keep every file byte for byte, so the installer built by CI matches the published hash.
+* -text

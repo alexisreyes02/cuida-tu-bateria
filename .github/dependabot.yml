@@ -1,0 +1,8 @@
+# Keeps the pinned GitHub Actions up to date (opens a pull request; nothing merges by itself).
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"

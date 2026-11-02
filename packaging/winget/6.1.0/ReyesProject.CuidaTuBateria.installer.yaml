@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
+# InstallerUrl points at the GitHub release; account: alexisreyes02.
+# InstallerSha256 below comes from a local build. Before submitting, replace it with the value in SHA256.txt from the CI run that built the release.
+PackageIdentifier: ReyesProject.CuidaTuBateria
+PackageVersion: 6.1.0
+MinimumOSVersion: 10.0.0.0
+InstallerType: exe
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+InstallerSwitches:
+  Silent: /silent
+  SilentWithProgress: /silent
+UpgradeBehavior: install
+ProductCode: CuidaTuBateria
+Installers:
+  - Architecture: neutral
+    InstallerUrl: https://github.com/alexisreyes02/cuida-tu-bateria/releases/download/v6.1.0/CuidaTuBateriaSetup-6.1.0.exe
+    InstallerSha256: 82BA4E9BEDE2F4BCBA825484AC5B29569298C2A96686E1AC3BAD3F4291BDE2D9
+ManifestType: installer
+ManifestVersion: 1.12.0
