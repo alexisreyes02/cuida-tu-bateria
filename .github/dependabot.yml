@@ -1,4 +1,5 @@
 # Keeps the pinned GitHub Actions up to date (opens a pull request; nothing merges by itself).
+# All action updates of the week arrive together in one pull request.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -6,3 +7,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    groups:
+      actions:
+        patterns:
+          - "*"
