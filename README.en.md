@@ -35,15 +35,15 @@ I once brought a Canaima school laptop back from the dead. This app warns you in
 
 ## Install
 
-Download `CuidaTuBateriaSetup-6.1.0.exe` from the [releases page](https://github.com/alexisreyes02/cuida-tu-bateria/releases) and run it. Nothing else is needed (it uses .NET Framework 4.6.1, which ships with Windows 10 and 11).
+Download `CuidaTuBateriaSetup-6.2.0.exe` from the [releases page](https://github.com/alexisreyes02/cuida-tu-bateria/releases) and run it. Nothing else is needed (it uses .NET Framework 4.6.1, which ships with Windows 10 and 11).
 
 Until the installer is code-signed, Windows may show "Windows protected your PC". To continue, choose "More info" and then "Run anyway". To check that the file is the original, run this in PowerShell and compare the result with the SHA-256 published next to the download:
 
 ```
-Get-FileHash ".\CuidaTuBateriaSetup-6.1.0.exe" -Algorithm SHA256
+Get-FileHash ".\CuidaTuBateriaSetup-6.2.0.exe" -Algorithm SHA256
 ```
 
-Silent install (for winget and scripts): `CuidaTuBateriaSetup-6.1.0.exe /silent`. A fresh silent install turns on "Start with Windows"; an update keeps your settings. Silent removal: `uninstall.exe /uninstall /silent`, from the install folder (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
+Silent install (for winget and scripts): `CuidaTuBateriaSetup-6.2.0.exe /silent`. A fresh silent install turns on "Start with Windows"; an update keeps your settings. Silent removal: `uninstall.exe /uninstall /silent`, from the install folder (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
 
 ## Where your data lives
 

@@ -21,7 +21,7 @@ namespace CuidaTuBateria
 {
     internal static class Program
     {
-        public const string Version = "6.1";
+        public const string Version = "6.2";
         public const string SourceUrl = "github.com/alexisreyes02/cuida-tu-bateria";
         public const string ExitEventName = "CuidaTuBateria.Exit.RP";
 
@@ -1568,7 +1568,7 @@ namespace CuidaTuBateria
             Card(g, r, Theme.Gold, 0.5f);
             if (introTitle == null) introTitle = Fonts.Serif(28f);
             using (var b = new SolidBrush(Theme.Text)) g.DrawString("Cuida tu Batería " + Program.Version, introTitle, b, r.X + 36, r.Y + 24);
-            using (var b = new SolidBrush(Theme.Dim)) g.DrawString("Copyright (C) 2026 Alexis Reyes (Reyes Project)", Theme.Small, b, r.X + 38, r.Y + 64);
+            using (var b = new SolidBrush(Theme.Dim)) g.DrawString(L.T("\u00A9 2026 Reyes Project. Hecho por Alexis Reyes.", "\u00A9 2026 Reyes Project. Made by Alexis Reyes."), Theme.Small, b, r.X + 38, r.Y + 64);
             float y = r.Y + 92;
             y = IntroPara(g, r, y, L.T("Software libre.", "Free software."),
                 L.T("Licencia GPL-3.0 o posterior. Se ofrece gratis y tal cual, sin garantía de ningún tipo. El código fuente está en " + Program.SourceUrl + ".",

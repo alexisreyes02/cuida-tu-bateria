@@ -57,7 +57,7 @@ namespace CuidaTuBateriaSetup
     internal sealed class SetupForm : Form
     {
         const int W = 760, H = 480;
-        const string Version = "6.1";
+        const string Version = "6.2";
         static readonly Font F38 = Fonts.Serif(38f);
         static readonly Font F30 = Fonts.Serif(30f);
         const string AppName = "Cuida tu Batería";
