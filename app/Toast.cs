@@ -120,7 +120,12 @@ namespace CuidaTuBateria
             anim.Interval = 30;
             shownAt = Now; lastT = shownAt;
             sparks.Clear();
-            if (cosmos == null) cosmos = new Cosmos(W, H, scale, W - 74, 24, 6f, 40);
+            if (cosmos == null)
+            {
+                bool day = Theme.Light;
+                if (day) Theme.Use(false);
+                try { cosmos = new Cosmos(W, H, scale, W - 74, 24, 6f, 40); } finally { if (day) Theme.Use(true); }
+            }
             PlaceNearTaskbar();
             Location = new Point(target.X + slide, target.Y);
             Opacity = 0;
@@ -246,9 +251,13 @@ namespace CuidaTuBateria
 
         // ---------- painting ----------
         // A drawing error must never turn into an error dialog repeated thirty times a second.
+        // The reminder keeps the night face in both themes: its neon glow is made for a dark sky.
         protected override void OnPaint(PaintEventArgs e)
         {
+            bool day = Theme.Light;
+            if (day) Theme.Use(false);
             try { PaintBody(e); } catch (Exception ex) { Log.Write("toast paint", ex); }
+            finally { if (day) Theme.Use(true); }
         }
 
         void PaintBody(PaintEventArgs e)

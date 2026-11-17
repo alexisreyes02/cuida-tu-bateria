@@ -24,6 +24,8 @@ Una vez reviví una canaimita que estaba súper muerta. Esta app te avisa a tiem
 - Te dice dónde se activa el límite de carga de fábrica en Lenovo, ASUS, Dell, Samsung, Acer y HP de negocios. Ese límite sí corta la carga.
 - Los domingos en la tarde, un resumen corto de tu semana. Sin regaños.
 - Se maneja con el teclado (Tab, Enter, Esc), está en español y en inglés, y se ve nítida en cualquier pantalla.
+- Dos caras: noche (oscura) y día (clara), o la que tenga Windows. Se elige en el menú del rayito, en Tema.
+- Si aceptas, te avisa cuando sale una versión nueva y se actualiza con un toque, sin perder tus ajustes.
 
 ## Qué no hace
 
@@ -35,17 +37,17 @@ Una vez reviví una canaimita que estaba súper muerta. Esta app te avisa a tiem
 
 ## Instalar
 
-Descarga `CuidaTuBateriaSetup-6.3.0.exe` de la [página de versiones](https://github.com/alexisreyes02/cuida-tu-bateria/releases) y ábrelo. No hace falta instalar nada más (usa .NET Framework 4.6.1, que ya viene con Windows 10 y 11).
+Descarga `CuidaTuBateriaSetup-6.4.0.exe` de la [página de versiones](https://github.com/alexisreyes02/cuida-tu-bateria/releases) y ábrelo. No hace falta instalar nada más (usa .NET Framework 4.6.1, que ya viene con Windows 10 y 11).
 
 Mientras el instalador no tenga firma digital, Windows puede mostrar "Windows protegió tu PC". Para seguir: "Más información" y luego "Ejecutar de todas formas". Antes de abrirlo, puedes comprobar que el archivo es el original. En PowerShell:
 
 ```
-Get-FileHash ".\CuidaTuBateriaSetup-6.3.0.exe" -Algorithm SHA256
+Get-FileHash ".\CuidaTuBateriaSetup-6.4.0.exe" -Algorithm SHA256
 ```
 
 El resultado tiene que ser igual al SHA-256 publicado junto a la descarga.
 
-Para instalar sin ventanas (por ejemplo, desde winget): `CuidaTuBateriaSetup-6.3.0.exe /silent`. Una instalación nueva así queda con "Iniciar con Windows" encendido; una actualización respeta lo que tenías. Para quitarla sin ventanas: `uninstall.exe /uninstall /silent`, desde la carpeta de instalación (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
+Para instalar sin ventanas (por ejemplo, desde winget): `CuidaTuBateriaSetup-6.4.0.exe /silent`. Una instalación nueva así queda con "Iniciar con Windows" encendido; una actualización respeta lo que tenías. Para quitarla sin ventanas: `uninstall.exe /uninstall /silent`, desde la carpeta de instalación (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
 
 ## Dónde guarda tus cosas
 

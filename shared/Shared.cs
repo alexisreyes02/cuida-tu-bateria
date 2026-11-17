@@ -161,18 +161,45 @@ namespace RP
     internal static class Theme
     {
         // Palette of the house: night and gold. Blue exists only as halo light, never as a fill.
-        public static readonly Color Bg = Color.FromArgb(3, 5, 9);            // noche #030509
-        public static readonly Color Card = Color.FromArgb(11, 12, 17);
-        public static readonly Color Gold = Color.FromArgb(242, 163, 58);     // #F2A33A
-        public static readonly Color GoldSoft = Color.FromArgb(255, 209, 138); // #FFD18A
-        public static readonly Color GoldDeep = Color.FromArgb(176, 104, 24);
-        public static readonly Color Ember = Color.FromArgb(201, 119, 43);
-        public static readonly Color Halo = Color.FromArgb(128, 184, 255);    // light only
-        public static readonly Color Charge = GoldSoft;
-        public static readonly Color Alert = Gold;
-        public static readonly Color Calm = Color.FromArgb(214, 196, 160);
-        public static readonly Color Text = Color.FromArgb(242, 238, 230);
-        public static readonly Color Dim = Color.FromArgb(150, 142, 128);
+        // Two faces of the same palette: night (the house's own) and day (paper and the same gold, darker,
+        // so it reads on a light background). Use() switches them; everything paints from these fields.
+        public static Color Bg, Card, Gold, GoldSoft, GoldDeep, Ember, Halo, Charge, Alert, Calm, Text, Dim;
+        public static bool Light { get; private set; }
+
+        static Theme() { Use(false); }
+
+        public static void Use(bool light)
+        {
+            Light = light;
+            if (!light)
+            {
+                Bg = Color.FromArgb(3, 5, 9);             // noche #030509
+                Card = Color.FromArgb(11, 12, 17);
+                Gold = Color.FromArgb(242, 163, 58);      // #F2A33A
+                GoldSoft = Color.FromArgb(255, 209, 138); // #FFD18A
+                GoldDeep = Color.FromArgb(176, 104, 24);
+                Ember = Color.FromArgb(201, 119, 43);
+                Halo = Color.FromArgb(128, 184, 255);     // light only
+                Calm = Color.FromArgb(214, 196, 160);
+                Text = Color.FromArgb(242, 238, 230);
+                Dim = Color.FromArgb(150, 142, 128);
+            }
+            else
+            {
+                Bg = Color.FromArgb(246, 241, 231);       // papel #F6F1E7
+                Card = Color.FromArgb(255, 252, 245);
+                Gold = Color.FromArgb(166, 98, 14);       // the same gold, deep enough to read on paper
+                GoldSoft = Color.FromArgb(122, 70, 8);
+                GoldDeep = Color.FromArgb(120, 68, 6);
+                Ember = Color.FromArgb(168, 88, 28);
+                Halo = Color.FromArgb(64, 120, 200);
+                Calm = Color.FromArgb(132, 98, 48);
+                Text = Color.FromArgb(31, 26, 18);
+                Dim = Color.FromArgb(108, 99, 85);
+            }
+            Charge = GoldSoft;
+            Alert = Gold;
+        }
 
         public static readonly Font Title = Fonts.Serif(24f);
         public static readonly Font Sub = Fonts.Sans(13f);
@@ -322,6 +349,7 @@ namespace RP
         readonly Star[] stars;
         readonly SolidBrush starBrush = new SolidBrush(Color.White);
         readonly float hx, hy, hr;
+        readonly bool day;   // painted for the day face: gold dust instead of stars, a sun instead of the black hole
         public PointF Parallax;
 
         public Cosmos(int w, int h, float scale, float holeX, float holeY, float holeR) : this(w, h, scale, holeX, holeY, holeR, 64) { }
@@ -335,10 +363,21 @@ namespace RP
                 g.ScaleTransform(scale, scale);
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.Clear(Theme.Bg);
-                Glow(g, w * 0.88f, h * 0.10f, 380, Color.FromArgb(34, 242, 163, 58));
-                Glow(g, w * 0.06f, h * 0.98f, 320, Color.FromArgb(26, 128, 184, 255));
-                Glow(g, w * 0.46f, h * 0.55f, 440, Color.FromArgb(12, 255, 209, 138));
-                Glow(g, w * 0.70f, h * 0.90f, 260, Color.FromArgb(18, 201, 119, 43));
+                day = Theme.Light;
+                if (!day)
+                {
+                    Glow(g, w * 0.88f, h * 0.10f, 380, Color.FromArgb(34, 242, 163, 58));
+                    Glow(g, w * 0.06f, h * 0.98f, 320, Color.FromArgb(26, 128, 184, 255));
+                    Glow(g, w * 0.46f, h * 0.55f, 440, Color.FromArgb(12, 255, 209, 138));
+                    Glow(g, w * 0.70f, h * 0.90f, 260, Color.FromArgb(18, 201, 119, 43));
+                }
+                else
+                {
+                    // Day: warm light from the corner where the sun sits, a faint sky on the far side.
+                    Glow(g, w * 0.88f, h * 0.10f, 420, Color.FromArgb(70, 255, 196, 110));
+                    Glow(g, w * 0.06f, h * 0.98f, 320, Color.FromArgb(22, 128, 184, 255));
+                    Glow(g, w * 0.46f, h * 0.55f, 440, Color.FromArgb(26, 255, 222, 170));
+                }
             }
             var r = new Random(11);
             stars = new Star[starCount];
@@ -383,14 +422,34 @@ namespace RP
                 var s = stars[i];
                 float tw = 0.5f + 0.5f * (float)Math.Sin(s.Ph);
                 int a = (int)(255 * (0.25f + 0.75f * s.Z) * (0.35f + 0.65f * tw));
-                Color c = s.Tint == 0 ? Theme.GoldSoft : (s.Tint == 1 ? Theme.Halo : Color.White);
+                Color c = day ? (s.Tint == 1 ? Theme.Halo : Theme.Gold) : (s.Tint == 0 ? Theme.GoldSoft : (s.Tint == 1 ? Theme.Halo : Color.White));
+                if (day) a = a * 2 / 5;
                 starBrush.Color = Color.FromArgb(Math.Max(0, Math.Min(255, a)), c);
                 float sz = 0.9f + s.Z * 1.5f;
                 float x = s.X + Parallax.X * s.Z * 16f;
                 float y = s.Y + Parallax.Y * s.Z * 16f;
                 g.FillEllipse(starBrush, x, y, sz, sz);
             }
-            if (hr > 0) DrawHole(g, t);
+            if (hr > 0) { if (day) DrawSun(g, t); else DrawHole(g, t); }
+        }
+
+        void DrawSun(Graphics g, float t)
+        {
+            float cx = hx + Parallax.X * 5f, cy = hy + Parallax.Y * 5f;
+            float pulse = 0.85f + 0.15f * (float)Math.Sin(t * 0.9f);
+            for (int i = 6; i >= 1; i--)
+                using (var b = new SolidBrush(Color.FromArgb((int)((16 + 4 * (6 - i)) * pulse), 255, 170, 60)))
+                    g.FillEllipse(b, cx - hr - i * 4f, cy - hr - i * 4f, 2 * hr + i * 8f, 2 * hr + i * 8f);
+            using (var gp = new GraphicsPath())
+            {
+                gp.AddEllipse(cx - hr, cy - hr, 2 * hr, 2 * hr);
+                using (var pb = new PathGradientBrush(gp))
+                {
+                    pb.CenterColor = Color.FromArgb(255, 255, 236, 190);
+                    pb.SurroundColors = new[] { Color.FromArgb(255, 236, 150, 46) };
+                    g.FillPath(pb, gp);
+                }
+            }
         }
 
         void DrawHole(Graphics g, float t)

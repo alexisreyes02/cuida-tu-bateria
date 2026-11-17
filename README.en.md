@@ -24,6 +24,8 @@ I once brought a Canaima school laptop back from the dead. This app warns you in
 - Tells you where to turn on the factory charge limit on Lenovo, ASUS, Dell, Samsung, Acer and HP business laptops. That limit really stops charging.
 - On Sunday evenings, a short summary of your week. No scolding.
 - Works with the keyboard (Tab, Enter, Esc), in Spanish and English, and stays sharp on any screen.
+- Two faces: night (dark) and day (light), or whatever Windows uses. Choose it from the bolt menu, under Theme.
+- If you agree, it tells you when a new version is out and updates with one click, keeping your settings.
 
 ## What it does not do
 
@@ -35,15 +37,15 @@ I once brought a Canaima school laptop back from the dead. This app warns you in
 
 ## Install
 
-Download `CuidaTuBateriaSetup-6.3.0.exe` from the [releases page](https://github.com/alexisreyes02/cuida-tu-bateria/releases) and run it. Nothing else is needed (it uses .NET Framework 4.6.1, which ships with Windows 10 and 11).
+Download `CuidaTuBateriaSetup-6.4.0.exe` from the [releases page](https://github.com/alexisreyes02/cuida-tu-bateria/releases) and run it. Nothing else is needed (it uses .NET Framework 4.6.1, which ships with Windows 10 and 11).
 
 Until the installer is code-signed, Windows may show "Windows protected your PC". To continue, choose "More info" and then "Run anyway". To check that the file is the original, run this in PowerShell and compare the result with the SHA-256 published next to the download:
 
 ```
-Get-FileHash ".\CuidaTuBateriaSetup-6.3.0.exe" -Algorithm SHA256
+Get-FileHash ".\CuidaTuBateriaSetup-6.4.0.exe" -Algorithm SHA256
 ```
 
-Silent install (for winget and scripts): `CuidaTuBateriaSetup-6.3.0.exe /silent`. A fresh silent install turns on "Start with Windows"; an update keeps your settings. Silent removal: `uninstall.exe /uninstall /silent`, from the install folder (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
+Silent install (for winget and scripts): `CuidaTuBateriaSetup-6.4.0.exe /silent`. A fresh silent install turns on "Start with Windows"; an update keeps your settings. Silent removal: `uninstall.exe /uninstall /silent`, from the install folder (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
 
 ## Where your data lives
 

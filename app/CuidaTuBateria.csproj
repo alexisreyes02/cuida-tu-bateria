@@ -11,7 +11,7 @@
     <RootNamespace>CuidaTuBateria</RootNamespace>
     <ApplicationIcon>..\assets\cuidatubateria.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>6.3.0</Version>
+    <Version>6.4.0</Version>
     <AssemblyTitle>Cuida tu Batería</AssemblyTitle>
     <Company>Reyes Project</Company>
     <Product>Cuida tu Batería</Product>

@@ -20,7 +20,12 @@ namespace CuidaTuBateria
     {
         // The usage log and the health readings describe this laptop, so they live in Local AppData:
         // a roaming profile or a redirected AppData folder would otherwise mix two machines.
+#if PREVIEW
+        // Test builds can point at a throwaway folder, so they never touch a real person's numbers.
+        public static string Dir { get { var d = Environment.GetEnvironmentVariable("CF_DIR"); return !string.IsNullOrEmpty(d) ? d : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuidaTuBateria"); } }
+#else
         public static string Dir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CuidaTuBateria"); } }
+#endif
         public static string OldDir { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CuidaTuBateria"); } }
 
         // 5.x kept everything in Roaming. Move it once; the copy is checked before the original goes.

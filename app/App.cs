@@ -21,7 +21,7 @@ namespace CuidaTuBateria
 {
     internal static class Program
     {
-        public const string Version = "6.3";
+        public const string Version = "6.4";
         public const string SourceUrl = "github.com/alexisreyes02/cuida-tu-bateria";
         public const string ExitEventName = "CuidaTuBateria.Exit.RP";
 
@@ -38,12 +38,17 @@ namespace CuidaTuBateria
             AppDomain.CurrentDomain.UnhandledException += (s, e) => Log.Write("domain", e.ExceptionObject as Exception);
 
             bool first;
-            using (var mutex = new Mutex(true, "CuidaTuBateria.SingleInstance.RP", out first))
+#if PREVIEW
+            const string Inst = ".Preview";   // a test build runs beside the installed app without touching it
+#else
+            const string Inst = "";
+#endif
+            using (var mutex = new Mutex(true, "CuidaTuBateria.SingleInstance.RP" + Inst, out first))
             {
-                var showEv = new EventWaitHandle(false, EventResetMode.AutoReset, "CuidaTuBateria.Show.RP");
+                var showEv = new EventWaitHandle(false, EventResetMode.AutoReset, "CuidaTuBateria.Show.RP" + Inst);
                 if (!first) { showEv.Set(); return; }
                 // The installer sets this event to ask for a clean exit before an update or removal.
-                var exitEv = new EventWaitHandle(false, EventResetMode.ManualReset, ExitEventName);
+                var exitEv = new EventWaitHandle(false, EventResetMode.ManualReset, ExitEventName + Inst);
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 bool toTray = Array.IndexOf(args, "--tray") >= 0;
@@ -87,6 +92,7 @@ namespace CuidaTuBateria
         public bool AlwaysPlugged;                // point of sale, desk with UPS: never ask to unplug
         public string Updates = "";               // "si", "no", or "" (not asked yet)
         public long UpdateCheckedUtc;             // ticks of the last question to GitHub
+        public string Tema = "auto";              // auto (as Windows), oscuro, claro
 
         static string LegacyFile { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChargeAndForget", "settings.ini"); } }
         static string FilePath { get { return Path.Combine(Paths.Dir, "settings.ini"); } }
@@ -118,6 +124,7 @@ namespace CuidaTuBateria
                         else if (k == "vive_conectada") s.AlwaysPlugged = v == "1";
                         else if (k == "actualizar") s.Updates = v == "si" || v == "no" ? v : "";
                         else if (k == "revisado" && long.TryParse(v, out l)) s.UpdateCheckedUtc = l;
+                        else if (k == "tema") s.Tema = v == "oscuro" || v == "claro" ? v : "auto";
                     }
                 }
             }
@@ -152,7 +159,7 @@ namespace CuidaTuBateria
                     "hint=" + (HintShown ? "1" : "0"), "intro=" + (IntroDone ? "1" : "0"), "lang=" + Lang,
                     "apagon=" + ApagonUntilUtc, "drenado=" + Drained.ToString("0.#", CultureInfo.InvariantCulture),
                     "desde=" + Since, "resumen=" + WeeklyShown, "vive_conectada=" + (AlwaysPlugged ? "1" : "0"),
-                    "actualizar=" + Updates, "revisado=" + UpdateCheckedUtc }) + "\n");
+                    "actualizar=" + Updates, "revisado=" + UpdateCheckedUtc, "tema=" + Tema }) + "\n");
             }
             catch { }
         }
@@ -189,21 +196,32 @@ namespace CuidaTuBateria
         }
     }
 
-    internal sealed class DarkColors : ProfessionalColorTable
+    // The tray menu in the same face as the window: night or day.
+    internal sealed class MenuColors : ProfessionalColorTable
     {
-        public override Color ToolStripDropDownBackground { get { return Color.FromArgb(12, 13, 18); } }
-        public override Color MenuBorder { get { return Color.FromArgb(90, 242, 163, 58); } }
-        public override Color MenuItemBorder { get { return Color.FromArgb(242, 163, 58); } }
-        public override Color MenuItemSelected { get { return Color.FromArgb(62, 46, 22); } }
-        public override Color MenuItemSelectedGradientBegin { get { return Color.FromArgb(62, 46, 22); } }
-        public override Color MenuItemSelectedGradientEnd { get { return Color.FromArgb(62, 46, 22); } }
-        public override Color ImageMarginGradientBegin { get { return Color.FromArgb(12, 13, 18); } }
-        public override Color ImageMarginGradientMiddle { get { return Color.FromArgb(12, 13, 18); } }
-        public override Color ImageMarginGradientEnd { get { return Color.FromArgb(12, 13, 18); } }
-        public override Color SeparatorDark { get { return Color.FromArgb(70, 60, 42); } }
-        public override Color SeparatorLight { get { return Color.FromArgb(12, 13, 18); } }
-        public override Color CheckBackground { get { return Color.FromArgb(176, 104, 24); } }
-        public override Color CheckSelectedBackground { get { return Color.FromArgb(176, 104, 24); } }
+        readonly Color bg, sel, sep, check, border;
+        public MenuColors(bool light)
+        {
+            bg = light ? Color.FromArgb(250, 246, 238) : Color.FromArgb(12, 13, 18);
+            sel = light ? Color.FromArgb(240, 222, 188) : Color.FromArgb(62, 46, 22);
+            sep = light ? Color.FromArgb(214, 196, 160) : Color.FromArgb(70, 60, 42);
+            check = light ? Color.FromArgb(214, 160, 80) : Color.FromArgb(176, 104, 24);
+            border = light ? Color.FromArgb(166, 98, 14) : Color.FromArgb(242, 163, 58);
+        }
+        public Color Back { get { return bg; } }
+        public override Color ToolStripDropDownBackground { get { return bg; } }
+        public override Color MenuBorder { get { return Color.FromArgb(110, border); } }
+        public override Color MenuItemBorder { get { return border; } }
+        public override Color MenuItemSelected { get { return sel; } }
+        public override Color MenuItemSelectedGradientBegin { get { return sel; } }
+        public override Color MenuItemSelectedGradientEnd { get { return sel; } }
+        public override Color ImageMarginGradientBegin { get { return bg; } }
+        public override Color ImageMarginGradientMiddle { get { return bg; } }
+        public override Color ImageMarginGradientEnd { get { return bg; } }
+        public override Color SeparatorDark { get { return sep; } }
+        public override Color SeparatorLight { get { return bg; } }
+        public override Color CheckBackground { get { return check; } }
+        public override Color CheckSelectedBackground { get { return check; } }
     }
 
     internal sealed class Hit
@@ -245,7 +263,7 @@ namespace CuidaTuBateria
 #endif
         readonly NotifyIcon tray = new NotifyIcon();
         readonly ContextMenuStrip menu = new ContextMenuStrip();
-        ToolStripMenuItem miOpen, miMine, miAuto, miApagon, miLang, miLangAuto, miLangEs, miLangEn, miExit, miUpdates, miUpgrade;
+        ToolStripMenuItem miOpen, miMine, miAuto, miApagon, miLang, miLangAuto, miLangEs, miLangEn, miExit, miUpdates, miUpgrade, miTheme, miThemeAuto, miThemeDark, miThemeLight;
         readonly Icon icRest;
         readonly Icon[] fxCharge, fxUnplug, fxPlug;
         const int Frames = 12;
@@ -300,11 +318,13 @@ namespace CuidaTuBateria
         bool dismissed, autoOn, thresholdMoved;
         const int Hysteresis = 5;
         readonly PowerModeChangedEventHandler powerHandler;
+        readonly UserPreferenceChangedEventHandler prefHandler;
         bool animate = true;
 
         public MainForm(bool toTray)
         {
             ApplyLanguage();
+            Theme.Use(WantsLight());
             startHidden = toTray;
             using (var gd = Graphics.FromHwnd(IntPtr.Zero)) scale = Math.Max(1f, gd.DpiX / 96f);
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.Selectable, true);
@@ -320,7 +340,8 @@ namespace CuidaTuBateria
             animate = SystemInformation.UIEffectsEnabled;
             intro = !cfg.IntroDone;
 
-            icRest = Bolt.MakeIcon(Theme.GoldSoft, Theme.GoldDeep, 32);
+            // The tray icon sits on the taskbar, not in the window: it keeps the night gold in both themes.
+            icRest = Bolt.MakeIcon(Color.FromArgb(255, 209, 138), Color.FromArgb(176, 104, 24), 32);
             fxCharge = Frameset(Color.FromArgb(255, 224, 160), Color.FromArgb(200, 122, 30));
             fxUnplug = Frameset(Color.FromArgb(255, 244, 214), Color.FromArgb(242, 140, 30));
             fxPlug = Frameset(Color.FromArgb(255, 214, 170), Color.FromArgb(214, 96, 32));   // ember: blue is light only
@@ -351,6 +372,7 @@ namespace CuidaTuBateria
             if (Environment.GetEnvironmentVariable("CF_ALWAYS") == "1") cfg.AlwaysPlugged = true;
             if (Environment.GetEnvironmentVariable("CF_ABOUT") == "1") { about = true; BuildHits(); }
             if (Environment.GetEnvironmentVariable("CF_FOCUS") != null) { showFocus = true; focus = int.Parse(Environment.GetEnvironmentVariable("CF_FOCUS")); }
+            ShotIfAsked();
 #endif
             anim.Tick += delegate { Tick(); };
             poll.Tick += delegate { ReadBattery(); MeasureHealthIfStale(); WeeklySummary(); MaybeCheckUpdates(false); };
@@ -362,6 +384,12 @@ namespace CuidaTuBateria
                 try { if (IsHandleCreated && !IsDisposed) BeginInvoke(new Action(ReadBattery)); } catch { }
             };
             SystemEvents.PowerModeChanged += powerHandler;
+            // "Como Windows": when the person switches Windows between light and dark, follow it.
+            prefHandler = delegate (object s2, UserPreferenceChangedEventArgs e2)
+            {
+                if (cfg.Tema == "auto" && e2.Category == UserPreferenceCategory.General) try { BeginInvoke(new Action(ApplyTheme)); } catch { }
+            };
+            SystemEvents.UserPreferenceChanged += prefHandler;
             endingHandler = delegate { try { SaveAll(); } catch { } };
             SystemEvents.SessionEnding += endingHandler;
             autoOn = Autorun.IsOn();
@@ -761,9 +789,7 @@ namespace CuidaTuBateria
 
         void BuildTray()
         {
-            menu.Renderer = new ToolStripProfessionalRenderer(new DarkColors());
-            menu.BackColor = Color.FromArgb(12, 13, 18);
-            menu.ForeColor = Theme.Text;
+            ApplyMenuTheme();
             menu.Font = new Font("Segoe UI", 9.5f);
             miOpen = new ToolStripMenuItem();
             miOpen.Font = new Font(menu.Font, FontStyle.Bold);
@@ -781,7 +807,12 @@ namespace CuidaTuBateria
             miLangEs = new ToolStripMenuItem("Español"); miLangEs.Click += delegate { SetLang("es"); };
             miLangEn = new ToolStripMenuItem("English"); miLangEn.Click += delegate { SetLang("en"); };
             miLang.DropDownItems.AddRange(new ToolStripItem[] { miLangAuto, miLangEs, miLangEn });
-            miLang.DropDown.BackColor = menu.BackColor; miLang.DropDown.ForeColor = menu.ForeColor;
+            miTheme = new ToolStripMenuItem();
+            miThemeAuto = new ToolStripMenuItem(); miThemeAuto.Click += delegate { SetTheme("auto"); };
+            miThemeDark = new ToolStripMenuItem(); miThemeDark.Click += delegate { SetTheme("oscuro"); };
+            miThemeLight = new ToolStripMenuItem(); miThemeLight.Click += delegate { SetTheme("claro"); };
+            miTheme.DropDownItems.AddRange(new ToolStripItem[] { miThemeAuto, miThemeDark, miThemeLight });
+            ApplyMenuTheme();
             miAbout = new ToolStripMenuItem();
             miAbout.Click += delegate { about = true; BuildHits(); Reveal(); };
             miUpdates = new ToolStripMenuItem();
@@ -792,7 +823,7 @@ namespace CuidaTuBateria
             tray.BalloonTipClicked += delegate { if (offer != null) StartUpgrade(); };
             miExit = new ToolStripMenuItem();
             miExit.Click += delegate { ExitNow(); };
-            menu.Items.AddRange(new ToolStripItem[] { miOpen, miMine, new ToolStripSeparator(), miApagon, miAlways, miAuto, miLang, new ToolStripSeparator(), miUpgrade, miUpdates, miAbout, miExit });
+            menu.Items.AddRange(new ToolStripItem[] { miOpen, miMine, new ToolStripSeparator(), miApagon, miAlways, miAuto, miLang, miTheme, new ToolStripSeparator(), miUpgrade, miUpdates, miAbout, miExit });
             menu.Opening += delegate { autoOn = Autorun.IsOn(); MenuTexts(); };
             MenuTexts();
             tray.ContextMenuStrip = menu;
@@ -815,6 +846,11 @@ namespace CuidaTuBateria
             miLang.Text = L.T("Idioma", "Language");
             miLangAuto.Text = L.T("Automático", "Automatic");
             miLangAuto.Checked = cfg.Lang == "auto"; miLangEs.Checked = cfg.Lang == "es"; miLangEn.Checked = cfg.Lang == "en";
+            miTheme.Text = L.T("Tema", "Theme");
+            miThemeAuto.Text = L.T("Como Windows", "Same as Windows");
+            miThemeDark.Text = L.T("Noche (oscuro)", "Night (dark)");
+            miThemeLight.Text = L.T("Día (claro)", "Day (light)");
+            miThemeAuto.Checked = cfg.Tema == "auto"; miThemeDark.Checked = cfg.Tema == "oscuro"; miThemeLight.Checked = cfg.Tema == "claro";
             miAbout.Text = L.T("Acerca de", "About");
             miUpdates.Text = L.T("Buscar versiones nuevas", "Check for new versions");
             miUpdates.Checked = cfg.Updates == "si";
@@ -822,6 +858,49 @@ namespace CuidaTuBateria
             miUpgrade.Visible = o != null;
             if (o != null) miUpgrade.Text = L.T("Actualizar a la versión " + o.Text, "Update to version " + o.Text);
             miExit.Text = L.T("Salir", "Exit");
+        }
+
+        // ---------- theme ----------
+        bool WantsLight()
+        {
+            if (cfg.Tema == "claro") return true;
+            if (cfg.Tema == "oscuro") return false;
+            try
+            {
+                using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+                {
+                    object v = k == null ? null : k.GetValue("AppsUseLightTheme");
+                    return v is int && (int)v == 1;
+                }
+            }
+            catch { return false; }
+        }
+
+        void SetTheme(string tema)
+        {
+            cfg.Tema = tema; cfg.Save();
+            ApplyTheme(); MenuTexts();
+        }
+
+        void ApplyTheme()
+        {
+            bool light = WantsLight();
+            if (light == Theme.Light) return;
+            Theme.Use(light);
+            BackColor = Theme.Bg;
+            DropCosmos();                 // rebuilt on the next frame with the new sky
+            ApplyMenuTheme();
+            Invalidate();
+        }
+
+        void ApplyMenuTheme()
+        {
+            var mc = new MenuColors(Theme.Light);
+            menu.Renderer = new ToolStripProfessionalRenderer(mc);
+            menu.BackColor = mc.Back;
+            menu.ForeColor = Theme.Text;
+            foreach (var dd in new[] { miLang, miTheme })
+                if (dd != null) { dd.DropDown.BackColor = mc.Back; dd.DropDown.ForeColor = Theme.Text; }
         }
 
         void SetLang(string lang)
@@ -1171,6 +1250,31 @@ namespace CuidaTuBateria
             try { PaintBody(e.Graphics); }
             catch (Exception ex) { Log.Write("paint", ex); }
         }
+
+#if PREVIEW
+        // Test builds can save what they draw to a picture and leave, so a change of look can be
+        // checked without a person at the screen. Never in a shipped build.
+        void ShotIfAsked()
+        {
+            var path = Environment.GetEnvironmentVariable("CF_SHOT");
+            if (string.IsNullOrEmpty(path)) return;
+            var tm = new System.Windows.Forms.Timer { Interval = 2500 };
+            tm.Tick += delegate
+            {
+                tm.Stop();
+                try
+                {
+                    var sh = Environment.GetEnvironmentVariable("CF_SHOTVIEW");
+                    if (sh == "ask") { cfg.Updates = ""; BuildHits(); }
+                    using (var bmp = new Bitmap((int)(W * scale), (int)(H * scale)))
+                    using (var g = Graphics.FromImage(bmp)) { PaintBody(g); bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png); }
+                }
+                catch (Exception ex) { Log.Write("shot", ex); }
+                allowClose = true; tray.Visible = false; Application.Exit();
+            };
+            tm.Start();
+        }
+#endif
 
         void PaintBody(Graphics g)
         {
@@ -1759,7 +1863,7 @@ namespace CuidaTuBateria
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) { SystemEvents.PowerModeChanged -= powerHandler; SystemEvents.SessionEnding -= endingHandler; cosmos.Dispose(); tray.Dispose(); anim.Dispose(); poll.Dispose(); settle.Dispose(); trayAnim.Dispose(); toast.Dispose(); }
+            if (disposing) { SystemEvents.PowerModeChanged -= powerHandler; SystemEvents.SessionEnding -= endingHandler; SystemEvents.UserPreferenceChanged -= prefHandler; cosmos.Dispose(); tray.Dispose(); anim.Dispose(); poll.Dispose(); settle.Dispose(); trayAnim.Dispose(); toast.Dispose(); }
             base.Dispose(disposing);
         }
     }
