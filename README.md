@@ -28,24 +28,24 @@ Una vez reviví una canaimita que estaba súper muerta. Esta app te avisa a tiem
 ## Qué no hace
 
 - No corta la carga. Windows no permite que un programa apague el cargador. La app te avisa y tú desconectas.
-- No se conecta a internet. Nada sale de tu laptop.
+- No manda tus datos a nadie. Solo si aceptas buscar versiones nuevas, una vez al día le pregunta a GitHub cuál es la última.
 - No pide permisos de administrador. Se instala solo para tu usuario.
 - No funciona en Canaima GNU/Linux: es solo para Windows 10 y 11 (32 o 64 bits).
 - En una computadora de escritorio con UPS se queda tranquila: la batería que ve Windows es la de la UPS.
 
 ## Instalar
 
-Descarga `CuidaTuBateriaSetup-6.2.0.exe` de la [página de versiones](https://github.com/alexisreyes02/cuida-tu-bateria/releases) y ábrelo. No hace falta instalar nada más (usa .NET Framework 4.6.1, que ya viene con Windows 10 y 11).
+Descarga `CuidaTuBateriaSetup-6.3.0.exe` de la [página de versiones](https://github.com/alexisreyes02/cuida-tu-bateria/releases) y ábrelo. No hace falta instalar nada más (usa .NET Framework 4.6.1, que ya viene con Windows 10 y 11).
 
 Mientras el instalador no tenga firma digital, Windows puede mostrar "Windows protegió tu PC". Para seguir: "Más información" y luego "Ejecutar de todas formas". Antes de abrirlo, puedes comprobar que el archivo es el original. En PowerShell:
 
 ```
-Get-FileHash ".\CuidaTuBateriaSetup-6.2.0.exe" -Algorithm SHA256
+Get-FileHash ".\CuidaTuBateriaSetup-6.3.0.exe" -Algorithm SHA256
 ```
 
 El resultado tiene que ser igual al SHA-256 publicado junto a la descarga.
 
-Para instalar sin ventanas (por ejemplo, desde winget): `CuidaTuBateriaSetup-6.2.0.exe /silent`. Una instalación nueva así queda con "Iniciar con Windows" encendido; una actualización respeta lo que tenías. Para quitarla sin ventanas: `uninstall.exe /uninstall /silent`, desde la carpeta de instalación (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
+Para instalar sin ventanas (por ejemplo, desde winget): `CuidaTuBateriaSetup-6.3.0.exe /silent`. Una instalación nueva así queda con "Iniciar con Windows" encendido; una actualización respeta lo que tenías. Para quitarla sin ventanas: `uninstall.exe /uninstall /silent`, desde la carpeta de instalación (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
 
 ## Dónde guarda tus cosas
 
@@ -60,7 +60,7 @@ Al quitar la app, el desinstalador te pregunta si quieres conservar estos archiv
 
 ## Cómo calcula el tiempo que te queda
 
-Toma los tramos en que la laptop estuvo con batería en los últimos 14 días, suma cuánto bajó el porcentaje y lo divide entre las horas. Si la laptop lleva más de 5 minutos desconectada, mezcla ese ritmo del momento (60 %) con el de los días anteriores (40 %). Es una regla práctica, no una cifra de laboratorio. No cuentan los cortes de más de 16 minutos (suspensión, app cerrada) ni las lecturas de 98 % o más con batería: muchas laptops, la HP entre ellas, se quedan marcando 100 % unos minutos después de desconectarlas y luego se ponen al día de golpe. El tiempo llega hasta el nivel crítico de Windows (de entrada, 5 %), que es donde la laptop se apaga. Mientras no tiene tus datos, muestra la cuenta de Windows con la palabra "Unas" delante y dice que todavía no es la suya: Windows la saca de otras semanas, y con un uso más pesado puede quedarse corta.
+Toma los tramos en que la laptop estuvo con batería en los últimos 14 días, suma cuánto bajó el porcentaje y lo divide entre las horas. Si la laptop lleva más de 5 minutos desconectada, mezcla ese ritmo del momento con el de los días anteriores: al desconectar pesa 30 % y sube hasta 85 % pasada hora y media. Después, la mitad de la cuenta sigue los últimos 45 minutos, para que un cambio de uso se note pronto. Los saltos de más de 3 puntos en menos de 3 minutos (la lectura que se pone al día al despertar de la suspensión) no cuentan como uso. Probado con 20 descargas reales de la laptop del autor: el fallo típico es de 14 %. Es una regla práctica, no una cifra de laboratorio. No cuentan los cortes de más de 16 minutos (suspensión, app cerrada) ni las lecturas de 98 % o más con batería: muchas laptops, la HP entre ellas, se quedan marcando 100 % unos minutos después de desconectarlas y luego se ponen al día de golpe. El tiempo llega hasta el nivel crítico de Windows (de entrada, 5 %), que es donde la laptop se apaga. Mientras no tiene tus datos, muestra la cuenta de Windows con la palabra "Unas" delante y dice que todavía no es la suya: Windows la saca de otras semanas, y con un uso más pesado puede quedarse corta.
 
 ## Por qué 80 % y 20 %
 
@@ -91,7 +91,7 @@ Deja la app en `build/app` y el instalador en `build/installer`, e imprime el SH
 
 ## Privacidad, garantía y marcas
 
-Cuida tu Batería no se conecta a internet ni envía datos a nadie: tus ajustes, tu registro de uso y la salud de la batería se guardan solo en tu laptop, y puedes borrarlos cuando quieras.
+Cuida tu Batería no envía datos a nadie: tus ajustes, tu registro de uso y la salud de la batería se guardan solo en tu laptop, y puedes borrarlos cuando quieras. La primera vez que la abres te pregunta si quieres que busque versiones nuevas. Si dices que sí, una vez al día le pregunta a GitHub cuál es la última versión publicada, y solo instala las que vienen firmadas con la llave de Reyes Project. Lo cambias cuando quieras en el menú de la bandeja.
 
 Se ofrece gratis y tal cual, sin garantía de ningún tipo, según la licencia GPL-3.0 o posterior. Las cifras de salud y autonomía son estimaciones.
 

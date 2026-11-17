@@ -21,7 +21,7 @@ namespace CuidaTuBateria
 {
     internal static class Program
     {
-        public const string Version = "6.2";
+        public const string Version = "6.3";
         public const string SourceUrl = "github.com/alexisreyes02/cuida-tu-bateria";
         public const string ExitEventName = "CuidaTuBateria.Exit.RP";
 
@@ -85,6 +85,8 @@ namespace CuidaTuBateria
         public string Since = "";                 // yyyy-MM-dd the count started
         public string WeeklyShown = "";           // yyyy-MM-dd of the last Sunday summary
         public bool AlwaysPlugged;                // point of sale, desk with UPS: never ask to unplug
+        public string Updates = "";               // "si", "no", or "" (not asked yet)
+        public long UpdateCheckedUtc;             // ticks of the last question to GitHub
 
         static string LegacyFile { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ChargeAndForget", "settings.ini"); } }
         static string FilePath { get { return Path.Combine(Paths.Dir, "settings.ini"); } }
@@ -114,6 +116,8 @@ namespace CuidaTuBateria
                         else if (k == "desde") s.Since = v;
                         else if (k == "resumen") s.WeeklyShown = v;
                         else if (k == "vive_conectada") s.AlwaysPlugged = v == "1";
+                        else if (k == "actualizar") s.Updates = v == "si" || v == "no" ? v : "";
+                        else if (k == "revisado" && long.TryParse(v, out l)) s.UpdateCheckedUtc = l;
                     }
                 }
             }
@@ -147,7 +151,8 @@ namespace CuidaTuBateria
                     "upper=" + Upper, "lower=" + Lower, "notify=" + (Notify ? "1" : "0"),
                     "hint=" + (HintShown ? "1" : "0"), "intro=" + (IntroDone ? "1" : "0"), "lang=" + Lang,
                     "apagon=" + ApagonUntilUtc, "drenado=" + Drained.ToString("0.#", CultureInfo.InvariantCulture),
-                    "desde=" + Since, "resumen=" + WeeklyShown, "vive_conectada=" + (AlwaysPlugged ? "1" : "0") }) + "\n");
+                    "desde=" + Since, "resumen=" + WeeklyShown, "vive_conectada=" + (AlwaysPlugged ? "1" : "0"),
+                    "actualizar=" + Updates, "revisado=" + UpdateCheckedUtc }) + "\n");
             }
             catch { }
         }
@@ -240,7 +245,7 @@ namespace CuidaTuBateria
 #endif
         readonly NotifyIcon tray = new NotifyIcon();
         readonly ContextMenuStrip menu = new ContextMenuStrip();
-        ToolStripMenuItem miOpen, miMine, miAuto, miApagon, miLang, miLangAuto, miLangEs, miLangEn, miExit;
+        ToolStripMenuItem miOpen, miMine, miAuto, miApagon, miLang, miLangAuto, miLangEs, miLangEn, miExit, miUpdates, miUpgrade;
         readonly Icon icRest;
         readonly Icon[] fxCharge, fxUnplug, fxPlug;
         const int Frames = 12;
@@ -254,8 +259,10 @@ namespace CuidaTuBateria
         readonly bool startHidden;
 
         // hit areas
-        Hit hMin, hClose, hTabNow, hTabMine, hUpMinus, hUpPlus, hLoMinus, hLoPlus, hAuto, hNotify, hApagon, hAlways, hImage, hReport, hIntroOk, hIntroKeep, hAbout, hAboutClose;
+        Hit hMin, hClose, hTabNow, hTabMine, hUpMinus, hUpPlus, hLoMinus, hLoPlus, hAuto, hNotify, hApagon, hAlways, hImage, hReport, hIntroOk, hIntroKeep, hAbout, hAboutClose, hAskYes, hAskNo, hUpgrade;
         bool about;              // the "Acerca de" panel is open
+        volatile UpdateOffer offer;   // a newer, signed version waiting for one click
+        volatile bool updateBusy;     // asking GitHub or downloading right now
         int focus = -1;          // keyboard focus, index into hits
         bool showFocus;
 
@@ -346,7 +353,8 @@ namespace CuidaTuBateria
             if (Environment.GetEnvironmentVariable("CF_FOCUS") != null) { showFocus = true; focus = int.Parse(Environment.GetEnvironmentVariable("CF_FOCUS")); }
 #endif
             anim.Tick += delegate { Tick(); };
-            poll.Tick += delegate { ReadBattery(); MeasureHealthIfStale(); WeeklySummary(); };
+            poll.Tick += delegate { ReadBattery(); MeasureHealthIfStale(); WeeklySummary(); MaybeCheckUpdates(false); };
+            Updater.Clean();
             settle.Tick += delegate { settle.Stop(); ReadBattery(); };
             powerHandler = delegate (object s, PowerModeChangedEventArgs e)
             {
@@ -515,6 +523,9 @@ namespace CuidaTuBateria
             hIntroKeep = new Hit(new RectangleF(W - 540, H - 128, 196, 40), delegate { CloseIntro(false); }, "keep");
             hAbout = new Hit(new RectangleF(160, H - 38, 90, 28), delegate { about = true; focus = -1; BuildHits(); }, "about");
             hAboutClose = new Hit(new RectangleF(W - 330, H - 128, 190, 40), delegate { about = false; focus = -1; BuildHits(); }, "aboutclose");
+            hAskYes = new Hit(new RectangleF(W - 330, H - 128, 190, 40), delegate { SetUpdates(true); }, "updates-yes");
+            hAskNo = new Hit(new RectangleF(W - 500, H - 128, 160, 40), delegate { SetUpdates(false); }, "updates-no");
+            hUpgrade = new Hit(new RectangleF(W - 300, H - 38, 272, 28), StartUpgrade, "upgrade");
         }
 
         void BuildHits()
@@ -530,12 +541,18 @@ namespace CuidaTuBateria
                 hits.Add(hIntroOk);
                 hits.Add(hMin); hits.Add(hClose);
             }
+            else if (AskingUpdates)
+            {
+                hits.Add(hAskNo); hits.Add(hAskYes); hits.Add(hMin); hits.Add(hClose);
+            }
             else
             {
                 hits.Add(hTabNow); hits.Add(hTabMine);
                 if (view == View.Now) { hits.Add(hUpMinus); hits.Add(hUpPlus); hits.Add(hLoMinus); hits.Add(hLoPlus); hits.Add(hAuto); hits.Add(hNotify); hits.Add(hApagon); hits.Add(hAlways); }
                 else { hits.Add(hImage); hits.Add(hReport); }
-                hits.Add(hAbout); hits.Add(hMin); hits.Add(hClose);
+                hits.Add(hAbout);
+                if (offer != null) hits.Add(hUpgrade);
+                hits.Add(hMin); hits.Add(hClose);
             }
             if (focus >= hits.Count) focus = hits.Count - 1;
         }
@@ -547,6 +564,79 @@ namespace CuidaTuBateria
             if (useDefaults && IntroHasOldNumbers) { cfg.Upper = 80; cfg.Lower = 20; thresholdMoved = true; }
             cfg.IntroDone = true; cfg.Save();
             intro = false; focus = -1; BuildHits(); Evaluate();
+        }
+
+        // ---------- updates ----------
+        // Asked once, after the welcome, the first time the window is open. The answer can be changed
+        // from the tray menu at any time.
+        bool AskingUpdates { get { return !intro && !about && cfg.Updates.Length == 0; } }
+
+        void SetUpdates(bool on)
+        {
+            cfg.Updates = on ? "si" : "no";
+            if (!on) { offer = null; }
+            cfg.Save(); focus = -1; BuildHits(); MenuTexts(); Invalidate();
+            if (on) { cfg.UpdateCheckedUtc = 0; MaybeCheckUpdates(true); }
+        }
+
+        // Once a day, on a background thread, never in the first two minutes after Windows starts the app.
+        void MaybeCheckUpdates(bool now)
+        {
+            if (cfg.Updates != "si" || updateBusy || offer != null) return;
+            if (!now && clock.Elapsed.TotalMinutes < 2) return;
+            if (DateTime.UtcNow.Ticks - cfg.UpdateCheckedUtc < TimeSpan.TicksPerDay) return;
+            updateBusy = true;
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                UpdateOffer o = null; bool ok = true;
+                try { o = Updater.Check(); } catch (Exception ex) { ok = false; Log.Write("update check", ex); }
+                try
+                {
+                    BeginInvoke(new Action(delegate
+                    {
+                        updateBusy = false;
+                        // A failed check (no internet, a blackout) is tried again in an hour, not tomorrow.
+                        cfg.UpdateCheckedUtc = ok ? DateTime.UtcNow.Ticks : DateTime.UtcNow.AddHours(-23).Ticks;
+                        cfg.Save();
+                        if (o == null) return;
+                        offer = o; BuildHits(); MenuTexts(); Invalidate();
+                        tray.ShowBalloonTip(15000, L.T("Hay una versión nueva", "A new version is ready"),
+                            L.T("Cuida tu Batería " + o.Text + " está lista. Toca aquí y la instalo; tus ajustes y tu historial se quedan.",
+                                "Cuida tu Batería " + o.Text + " is ready. Click here and I will install it; your settings and history stay."), ToolTipIcon.Info);
+                    }));
+                }
+                catch { updateBusy = false; }
+            });
+        }
+
+        void StartUpgrade()
+        {
+            var o = offer;
+            if (o == null || updateBusy) return;
+            updateBusy = true;
+            bool open = Visible;
+            Note(L.T("Bajando la versión " + o.Text + " y revisando su firma...", "Downloading version " + o.Text + " and checking its signature..."));
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                string path = null;
+                try { path = Updater.Download(o); } catch (Exception ex) { Log.Write("update download", ex); }
+                try
+                {
+                    BeginInvoke(new Action(delegate
+                    {
+                        updateBusy = false;
+                        if (path == null)
+                        {
+                            Note(L.T("No pude bajar o verificar la versión nueva. No instalé nada; pruebo otra vez más tarde.", "I could not download or verify the new version. Nothing was installed; I will try again later."));
+                            return;
+                        }
+                        SaveAll();
+                        try { Updater.Run(path, open); }
+                        catch (Exception ex) { Log.Write("update run", ex); Note(L.T("Windows no dejó abrir el instalador. No cambié nada.", "Windows did not let the installer start. Nothing changed.")); }
+                    }));
+                }
+                catch { updateBusy = false; }
+            });
         }
 
         void SetView(View v)
@@ -694,9 +784,15 @@ namespace CuidaTuBateria
             miLang.DropDown.BackColor = menu.BackColor; miLang.DropDown.ForeColor = menu.ForeColor;
             miAbout = new ToolStripMenuItem();
             miAbout.Click += delegate { about = true; BuildHits(); Reveal(); };
+            miUpdates = new ToolStripMenuItem();
+            miUpdates.Click += delegate { SetUpdates(cfg.Updates != "si"); };
+            miUpgrade = new ToolStripMenuItem { Visible = false };
+            miUpgrade.Font = new Font(menu.Font, FontStyle.Bold);
+            miUpgrade.Click += delegate { StartUpgrade(); };
+            tray.BalloonTipClicked += delegate { if (offer != null) StartUpgrade(); };
             miExit = new ToolStripMenuItem();
             miExit.Click += delegate { ExitNow(); };
-            menu.Items.AddRange(new ToolStripItem[] { miOpen, miMine, new ToolStripSeparator(), miApagon, miAlways, miAuto, miLang, new ToolStripSeparator(), miAbout, miExit });
+            menu.Items.AddRange(new ToolStripItem[] { miOpen, miMine, new ToolStripSeparator(), miApagon, miAlways, miAuto, miLang, new ToolStripSeparator(), miUpgrade, miUpdates, miAbout, miExit });
             menu.Opening += delegate { autoOn = Autorun.IsOn(); MenuTexts(); };
             MenuTexts();
             tray.ContextMenuStrip = menu;
@@ -720,6 +816,11 @@ namespace CuidaTuBateria
             miLangAuto.Text = L.T("Automático", "Automatic");
             miLangAuto.Checked = cfg.Lang == "auto"; miLangEs.Checked = cfg.Lang == "es"; miLangEn.Checked = cfg.Lang == "en";
             miAbout.Text = L.T("Acerca de", "About");
+            miUpdates.Text = L.T("Buscar versiones nuevas", "Check for new versions");
+            miUpdates.Checked = cfg.Updates == "si";
+            var o = offer;
+            miUpgrade.Visible = o != null;
+            if (o != null) miUpgrade.Text = L.T("Actualizar a la versión " + o.Text, "Update to version " + o.Text);
             miExit.Text = L.T("Salir", "Exit");
         }
 
@@ -1102,13 +1203,20 @@ namespace CuidaTuBateria
             using (var b = new SolidBrush(Theme.Dim))
             {
                 g.DrawString("Reyes Project  |  v" + Program.Version, Theme.Small, b, 28, H - 32);
-                g.DrawString(L.T("Nada sale de esta laptop: la app nunca se conecta a internet.", "Nothing leaves this laptop: the app never goes online."), Theme.Small, b, W - 28, H - 32, FarFmt);
+                if (offer == null || intro || about || AskingUpdates)
+                    g.DrawString(cfg.Updates == "si"
+                        ? L.T("Nada tuyo sale de esta laptop. Solo le pregunto a GitHub si hay versión nueva.", "Nothing of yours leaves this laptop. I only ask GitHub whether there is a new version.")
+                        : L.T("Nada sale de esta laptop: la app no se conecta a internet.", "Nothing leaves this laptop: the app does not go online."), Theme.Small, b, W - 28, H - 32, FarFmt);
             }
+            if (offer != null && !intro && !about && !AskingUpdates)
+                using (var b = new SolidBrush(hUpgrade.Hover ? Theme.GoldSoft : Theme.Gold))
+                    g.DrawString(L.T("Versión " + offer.Text + " lista: actualizar", "Version " + offer.Text + " ready: update"), Theme.Btn, b, W - 28, H - 33, FarFmt);
             if (!intro && !about)
                 using (var b = new SolidBrush(hAbout.Hover ? Theme.GoldSoft : Theme.Gold))
                     g.DrawString(L.T("Acerca de", "About"), Theme.Small, b, hAbout.R.X + 6, H - 32);
             if (intro) DrawIntro(g, t);
             if (about) DrawAbout(g);
+            if (AskingUpdates) DrawAskUpdates(g);
             if (showFocus && focus >= 0 && focus < hits.Count)
             {
                 var r = hits[focus].R; r.Inflate(4, 4);
@@ -1574,12 +1682,34 @@ namespace CuidaTuBateria
                 L.T("Licencia GPL-3.0 o posterior. Se ofrece gratis y tal cual, sin garantía de ningún tipo. El código fuente está en " + Program.SourceUrl + ".",
                     "Licensed under GPL-3.0 or later. Offered free and as is, with no warranty of any kind. The source code is at " + Program.SourceUrl + "."));
             y = IntroPara(g, r, y, L.T("Tu privacidad.", "Your privacy."),
-                L.T("No se conecta a internet ni envía datos a nadie. Tus ajustes, tu uso y la salud de la batería se guardan solo en esta laptop, y al desinstalar decides si se quedan.",
-                    "It never goes online and sends nothing to anyone. Your settings, your usage and your battery's health stay on this laptop, and when you uninstall you decide whether they stay."));
+                L.T("No envía tus datos a nadie. Tus ajustes, tu uso y la salud de la batería se guardan solo en esta laptop, y al desinstalar decides si se quedan. Si aceptaste buscar versiones nuevas, una vez al día le pregunta a GitHub cuál es la última; nada más.",
+                    "It sends your data to no one. Your settings, your usage and your battery's health stay on this laptop, and when you uninstall you decide whether they stay. If you agreed to check for new versions, once a day it asks GitHub which one is the latest; nothing else."));
             y = IntroPara(g, r, y, L.T("Marcas y cifras.", "Brands and figures."),
                 L.T("Las cifras de salud y autonomía son estimaciones. Reyes Project no está afiliado a Lenovo, ASUS, Dell, Samsung, Acer, HP ni Microsoft; sus nombres son marcas de sus dueños y se usan solo para decir dónde está cada ajuste. Letras: Literata e IBM Plex Sans, licencia SIL OFL 1.1.",
                     "Health and battery-life figures are estimates. Reyes Project is not affiliated with Lenovo, ASUS, Dell, Samsung, Acer, HP or Microsoft; their names are their owners' trademarks, used only to say where each setting is. Typefaces: Literata and IBM Plex Sans, SIL OFL 1.1."));
             DrawPrimary(g, hAboutClose, L.T("Cerrar", "Close"));
+        }
+
+        // The one question about going online, asked once.
+        void DrawAskUpdates(Graphics g)
+        {
+            using (var b = new SolidBrush(Color.FromArgb(236, Theme.Bg))) g.FillRectangle(b, 0, 72, W, H - 72);
+            var r = new RectangleF(110, 84, W - 220, H - 112);
+            Card(g, r, Theme.Gold, 0.5f);
+            if (introTitle == null) introTitle = Fonts.Serif(28f);
+            using (var b = new SolidBrush(Theme.Text)) g.DrawString(L.T("¿Te aviso cuando haya mejoras?", "Shall I tell you when there are improvements?"), introTitle, b, r.X + 36, r.Y + 26);
+            float y = r.Y + 84;
+            y = IntroPara(g, r, y, L.T("Qué hago.", "What I do."),
+                L.T("Una vez al día le pregunto a GitHub, donde vive el código, si salió una versión nueva. Si salió, te aviso aquí y en la bandeja, y con un toque la instalo. Tus ajustes y tu historial se quedan.",
+                    "Once a day I ask GitHub, where the code lives, whether a new version is out. If it is, I tell you here and in the tray, and one click installs it. Your settings and history stay."));
+            y = IntroPara(g, r, y, L.T("Qué no hago.", "What I do not do."),
+                L.T("No mando nada tuyo: ni tu batería, ni tu uso, ni tu nombre. GitHub solo ve que alguien preguntó, como cuando abres una página.",
+                    "I send nothing of yours: not your battery, not your usage, not your name. GitHub only sees that someone asked, as when you open a web page."));
+            y = IntroPara(g, r, y, L.T("Por qué es seguro.", "Why it is safe."),
+                L.T("Solo instalo versiones firmadas con la llave de Reyes Project. Si algo no trae esa firma, lo ignoro. Puedes cambiar de idea cuando quieras en el menú de la bandeja.",
+                    "I only install versions signed with Reyes Project's key. Anything without that signature is ignored. You can change your mind any time from the tray menu."));
+            DrawButton(g, hAskNo, L.T("No, gracias", "No, thanks"));
+            DrawPrimary(g, hAskYes, L.T("Sí, avísame", "Yes, tell me"));
         }
 
         float IntroPara(Graphics g, RectangleF r, float y, string lead, string body)

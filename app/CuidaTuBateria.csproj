@@ -11,7 +11,7 @@
     <RootNamespace>CuidaTuBateria</RootNamespace>
     <ApplicationIcon>..\assets\cuidatubateria.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>6.2.0</Version>
+    <Version>6.3.0</Version>
     <AssemblyTitle>Cuida tu Batería</AssemblyTitle>
     <Company>Reyes Project</Company>
     <Product>Cuida tu Batería</Product>
@@ -30,5 +30,7 @@
     <EmbeddedResource Include="..\assets\fonts\Literata-Light.ttf" LogicalName="font.Literata-Light.ttf" />
     <EmbeddedResource Include="..\assets\fonts\IBMPlexSans-Regular.ttf" LogicalName="font.IBMPlexSans-Regular.ttf" />
     <EmbeddedResource Include="..\assets\fonts\IBMPlexSans-SemiBold.ttf" LogicalName="font.IBMPlexSans-SemiBold.ttf" />
+    <!-- Public half of Reyes Project's update key. The private half lives only in NordPass. -->
+    <EmbeddedResource Include="..\assets\clave-de-actualizaciones.xml" LogicalName="update.key.xml" />
   </ItemGroup>
 </Project>

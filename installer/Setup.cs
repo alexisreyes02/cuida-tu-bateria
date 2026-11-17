@@ -39,7 +39,7 @@ namespace CuidaTuBateriaSetup
             // engines read as ransomware behaviour), the uninstaller copies itself to the temp folder,
             // starts the copy and leaves; the copy removes the whole install, its original included.
             if (uninstall && !fromTemp && SetupForm.RunFromTemp(silent)) return;
-            if (silent) { Environment.Exit(SetupForm.Silent(uninstall)); return; }
+            if (silent) { Environment.Exit(SetupForm.Silent(uninstall, Array.IndexOf(args, "/abrir") >= 0)); return; }
             Application.Run(new SetupForm(uninstall));
         }
     }
@@ -57,7 +57,7 @@ namespace CuidaTuBateriaSetup
     internal sealed class SetupForm : Form
     {
         const int W = 760, H = 480;
-        const string Version = "6.2";
+        const string Version = "6.3";
         static readonly Font F38 = Fonts.Serif(38f);
         static readonly Font F30 = Fonts.Serif(30f);
         const string AppName = "Cuida tu Batería";
@@ -408,7 +408,7 @@ namespace CuidaTuBateriaSetup
         // Unattended mode for winget and scripts. A fresh install takes the defaults; an update keeps
         // what the person chose (start with Windows, desktop shortcut). /uninstall /silent removes the
         // app and keeps the person's numbers and history.
-        public static int Silent(bool uninstall)
+        public static int Silent(bool uninstall, bool openWindow)
         {
             try
             {
@@ -426,8 +426,19 @@ namespace CuidaTuBateriaSetup
                     bool wasRunning = IsRunning();
                     bool auto = update ? AutorunWasOn() : true;
                     bool desktop = update ? DesktopLinkExists() : false;
-                    string target = Install(d, auto, desktop, (a, b) => { });
-                    if (wasRunning) try { Process.Start(new ProcessStartInfo(target, "--tray") { UseShellExecute = true, WorkingDirectory = d }); } catch { }
+                    try
+                    {
+                        string target = Install(d, auto, desktop, (a, b) => { });
+                        // An update the app asked for brings it back as it was: the window if it was open, the tray if not.
+                        if (wasRunning) try { Process.Start(new ProcessStartInfo(target, openWindow ? "" : "--tray") { UseShellExecute = true, WorkingDirectory = d }); } catch { }
+                    }
+                    catch
+                    {
+                        // If the update fails halfway, the version already there is opened again, so the person is never left without it.
+                        string old = Path.Combine(d, ExeName);
+                        if (wasRunning && File.Exists(old)) try { Process.Start(new ProcessStartInfo(old, "--tray") { UseShellExecute = true, WorkingDirectory = d }); } catch { }
+                        throw;
+                    }
                 }
                 return 0;
             }

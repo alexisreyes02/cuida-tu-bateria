@@ -28,22 +28,22 @@ I once brought a Canaima school laptop back from the dead. This app warns you in
 ## What it does not do
 
 - It does not stop the charge. Windows does not let a program switch the charger off. The app reminds you, and you unplug.
-- It never connects to the internet. Nothing leaves your laptop.
+- It sends your data to no one. Only if you agree to check for new versions does it ask GitHub, once a day, which version is the latest.
 - It does not ask for administrator rights. It installs for your user only.
 - It does not run on Canaima GNU/Linux: it is for Windows 10 and 11 only (32-bit or 64-bit).
 - On a desktop PC with a UPS it stays quiet: the battery Windows sees belongs to the UPS.
 
 ## Install
 
-Download `CuidaTuBateriaSetup-6.2.0.exe` from the [releases page](https://github.com/alexisreyes02/cuida-tu-bateria/releases) and run it. Nothing else is needed (it uses .NET Framework 4.6.1, which ships with Windows 10 and 11).
+Download `CuidaTuBateriaSetup-6.3.0.exe` from the [releases page](https://github.com/alexisreyes02/cuida-tu-bateria/releases) and run it. Nothing else is needed (it uses .NET Framework 4.6.1, which ships with Windows 10 and 11).
 
 Until the installer is code-signed, Windows may show "Windows protected your PC". To continue, choose "More info" and then "Run anyway". To check that the file is the original, run this in PowerShell and compare the result with the SHA-256 published next to the download:
 
 ```
-Get-FileHash ".\CuidaTuBateriaSetup-6.2.0.exe" -Algorithm SHA256
+Get-FileHash ".\CuidaTuBateriaSetup-6.3.0.exe" -Algorithm SHA256
 ```
 
-Silent install (for winget and scripts): `CuidaTuBateriaSetup-6.2.0.exe /silent`. A fresh silent install turns on "Start with Windows"; an update keeps your settings. Silent removal: `uninstall.exe /uninstall /silent`, from the install folder (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
+Silent install (for winget and scripts): `CuidaTuBateriaSetup-6.3.0.exe /silent`. A fresh silent install turns on "Start with Windows"; an update keeps your settings. Silent removal: `uninstall.exe /uninstall /silent`, from the install folder (`%LOCALAPPDATA%\Programs\CuidaTuBateria`).
 
 ## Where your data lives
 
@@ -58,7 +58,7 @@ The uninstaller asks whether to keep these files. The health picture you save to
 
 ## How the time left is estimated
 
-It takes the stretches on battery from the last 14 days, adds up how much the percentage dropped, and divides by the hours. Once the laptop has been unplugged for more than 5 minutes, it blends the current rate (60%) with the earlier days (40%). This is a practical rule, not a lab figure. Gaps longer than 16 minutes (sleep, app closed) are ignored, and so are readings of 98% or more on battery: many laptops, HP among them, keep showing 100% for a few minutes after unplugging and then catch up all at once. The time runs down to the Windows critical level (5% by default), where the laptop shuts down. Until it has your data, it shows the Windows figure with "About" in front and says it is not its own yet: Windows bases it on other weeks, and heavier use can make it fall short.
+It takes the stretches on battery from the last 14 days, adds up how much the percentage dropped, and divides by the hours. Once the laptop has been unplugged for more than 5 minutes, it blends the current rate with the earlier days: 30% at unplugging, rising to 85% after an hour and a half. Then half of the figure follows the last 45 minutes, so a change of use shows soon. Drops of more than 3 points in under 3 minutes (the reading catching up after sleep) do not count as use. Tested against 20 real discharges on the author's laptop: the typical miss is 14%. This is a practical rule, not a lab figure. Gaps longer than 16 minutes (sleep, app closed) are ignored, and so are readings of 98% or more on battery: many laptops, HP among them, keep showing 100% for a few minutes after unplugging and then catch up all at once. The time runs down to the Windows critical level (5% by default), where the laptop shuts down. Until it has your data, it shows the Windows figure with "About" in front and says it is not its own yet: Windows bases it on other weeks, and heavier use can make it fall short.
 
 ## Why 80% and 20%
 
@@ -84,7 +84,7 @@ The app lands in `build/app` and the installer in `build/installer`, and the scr
 
 ## Privacy, warranty and trademarks
 
-Cuida tu Batería never connects to the internet and sends no data to anyone: your settings, your usage log and your battery's health stay on your laptop, and you can delete them at any time.
+Cuida tu Batería sends no data to anyone: your settings, your usage log and your battery's health stay on your laptop, and you can delete them at any time. The first time you open it, it asks whether it should check for new versions. If you say yes, once a day it asks GitHub which version is the latest published one, and it only installs versions signed with Reyes Project's key. You can change this any time from the tray menu.
 
 It is offered free and as is, with no warranty of any kind, under the GPL-3.0-or-later license. Health and battery-life figures are estimates.
 
